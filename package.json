@@ -1,8 +1,8 @@
 {
-  "name": "my-first-api",
-  "version": "0.0.1",
-  "description": "",
-  "author": "",
+  "name": "rest-api-for-unnamed-chat-app",
+  "version": "1.0.0",
+  "description": "A rest api for an unnamed mobile chat app",
+  "author": "Mehmet Ali KOÇAL",
   "private": true,
   "license": "UNLICENSED",
   "scripts": {
