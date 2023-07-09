@@ -2,6 +2,7 @@ import {
   Get,
   Post,
   Body,
+  Delete,
   Request,
   HttpCode,
   UseGuards,
@@ -49,6 +50,17 @@ export class UserController {
     await this.userService.updateUser({
       where: { id: Number(req.user.id) },
       data: userDTO,
+    });
+  }
+
+  @ApiOperation({
+    summary: 'TOKEN GEREKTİRİR | Hesabı siler',
+  })
+  @HttpCode(HttpStatus.OK)
+  @Delete('deleteAccount')
+  async deleteAccount(@Request() req) {
+    await this.userService.deleteUser({
+      id: Number(req.user.id),
     });
   }
 }
