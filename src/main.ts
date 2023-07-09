@@ -19,6 +19,17 @@ async function bootstrap() {
       'Chat uygulamasının API endpointlerini nasıl kullanacağınızı bu dokümantasyondan öğrenebilirsiniz.',
     )
     .setVersion('1.0')
+    .addBearerAuth(
+      {
+        type: 'http',
+        scheme: 'bearer',
+        bearerFormat: 'JWT',
+        name: 'JWT',
+        description: 'Enter JWT token',
+        in: 'header',
+      },
+      'JWT-auth',
+    )
     .build();
   app.useGlobalPipes(new ValidationPipe());
   const document = SwaggerModule.createDocument(
