@@ -11,13 +11,21 @@ import {
 import { AuthGuard } from '../../guard/auth.guard';
 import { UserDTO } from 'src/DTOs/user.dto';
 import { UserService } from './user.service';
+import {
+  ApiAcceptedResponse,
+  ApiBasicAuth,
+  ApiBearerAuth,
+  ApiTags,
+  ApiUnauthorizedResponse,
+} from '@nestjs/swagger/dist/decorators';
 
+@ApiTags('Kullanıcı İşlemleri')
+@UseGuards(AuthGuard)
 @Controller('user')
 export class UserController {
   constructor(private userService: UserService) {}
 
   @HttpCode(HttpStatus.OK)
-  @UseGuards(AuthGuard)
   @Get('accountDetails')
   async accountDetails(
     @Request() req,
@@ -26,7 +34,6 @@ export class UserController {
   }
 
   @HttpCode(HttpStatus.OK)
-  @UseGuards(AuthGuard)
   @Post('update')
   async updateAccountDetails(
     @Request() req,

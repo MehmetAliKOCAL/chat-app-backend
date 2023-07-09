@@ -1,10 +1,7 @@
 import {
-  Get,
   Post,
   Body,
-  Request,
   HttpCode,
-  UseGuards,
   Controller,
   HttpStatus,
 } from '@nestjs/common';
@@ -13,7 +10,9 @@ import {
   LoginUserDTO,
 } from 'src/DTOs/user.dto';
 import { AuthService } from './auth.service';
+import { ApiTags } from '@nestjs/swagger/dist/decorators';
 
+@ApiTags('Authorization')
 @Controller('auth')
 export class AuthController {
   constructor(private authService: AuthService) {}
