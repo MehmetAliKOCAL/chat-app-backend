@@ -40,8 +40,6 @@ export class AuthController {
   @HttpCode(HttpStatus.CREATED)
   @Post('register')
   async register(@Body() userDTO: UserDTO) {
-    return await this.authService.register(
-      userDTO,
-    );
+    await this.authService.register(userDTO);
   }
 }

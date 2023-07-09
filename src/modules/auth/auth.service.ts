@@ -1,4 +1,6 @@
 import {
+  HttpException,
+  HttpStatus,
   Injectable,
   UnauthorizedException,
 } from '@nestjs/common';
@@ -42,8 +44,20 @@ export class AuthService {
   }
 
   async register(data: UserDTO): Promise<User> {
-    return await this.prisma.user.create({
-      data,
-    });
+    const user = await this.prisma.user.findFirst(
+      {
+        where: { email: data.email },
+      },
+    );
+
+    if (user)
+      throw new HttpException(
+        'Bu e-posta adresine ait bir kullanıcı zaten var.',
+        HttpStatus.FOUND,
+      );
+    else
+      return await this.prisma.user.create({
+        data,
+      });
   }
 }
