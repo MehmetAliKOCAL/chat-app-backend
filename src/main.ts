@@ -1,18 +1,12 @@
-import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
+import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
-import {
-  SwaggerModule,
-  DocumentBuilder,
-} from '@nestjs/swagger';
+import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 
 async function bootstrap() {
-  const app = await NestFactory.create(
-    AppModule,
-    {
-      abortOnError: false,
-    },
-  );
+  const app = await NestFactory.create(AppModule, {
+    abortOnError: false,
+  });
   const config = new DocumentBuilder()
     .setTitle('Chat App API Dokümantasyonu')
     .setDescription(
@@ -31,12 +25,9 @@ async function bootstrap() {
       'JWT-auth',
     )
     .build();
-  app.useGlobalPipes(new ValidationPipe());
-  const document = SwaggerModule.createDocument(
-    app,
-    config,
-  );
+  const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('docs', app, document);
+  app.useGlobalPipes(new ValidationPipe());
   await app.listen(process.env.PORT);
 }
 bootstrap();

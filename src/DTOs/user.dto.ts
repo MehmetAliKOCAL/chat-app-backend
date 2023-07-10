@@ -1,8 +1,4 @@
-import {
-  IsNotEmpty,
-  IsEmail,
-  IsString,
-} from 'class-validator';
+import { IsNotEmpty, IsEmail, IsString } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger/dist';
 
 export class UserDTO {

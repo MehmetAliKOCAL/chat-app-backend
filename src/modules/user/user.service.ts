@@ -1,14 +1,12 @@
 import { Injectable } from '@nestjs/common';
-import { PrismaService } from '../../prisma.service';
 import { User, Prisma } from '@prisma/client';
+import { PrismaService } from '../../prisma.service';
 
 @Injectable()
 export class UserService {
   constructor(private prisma: PrismaService) {}
 
-  async findUser(
-    email: string,
-  ): Promise<User | null> {
+  async findUser(email: string): Promise<User | null> {
     return this.prisma.user.findFirst({
       where: { email: email },
     });
@@ -21,8 +19,7 @@ export class UserService {
     where?: Prisma.UserWhereInput;
     orderBy?: Prisma.UserOrderByWithRelationInput;
   }): Promise<User[]> {
-    const { skip, take, cursor, where, orderBy } =
-      params;
+    const { skip, take, cursor, where, orderBy } = params;
     return this.prisma.user.findMany({
       skip,
       take,

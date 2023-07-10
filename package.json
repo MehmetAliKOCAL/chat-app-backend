@@ -1,7 +1,7 @@
 {
-  "name": "rest-api-for-unnamed-chat-app",
+  "name": "chat-app-backend",
   "version": "1.0.0",
-  "description": "A rest api for an unnamed mobile chat app",
+  "description": "A rest api + message websocket for an unnamed mobile chat app",
   "author": "Mehmet Ali KOÇAL",
   "private": true,
   "license": "UNLICENSED",
@@ -28,6 +28,7 @@
     "@nestjs/swagger": "^7.1.1",
     "@nestjs/websockets": "^10.0.5",
     "@prisma/client": "^4.16.2",
+    "@types/socket.io": "^3.0.2",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.0",
     "reflect-metadata": "^0.1.13",
