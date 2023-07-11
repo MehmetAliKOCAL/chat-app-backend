@@ -2,15 +2,15 @@ import {
   CanActivate,
   ExecutionContext,
   Injectable,
-  UnauthorizedException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from 'src/prisma.service';
+import { WsException } from '@nestjs/websockets';
 
 @Injectable()
 export class WebSocketGuard implements CanActivate {
   constructor(
-    private jwtService: JwtService,
+    private jwt: JwtService,
     private prisma: PrismaService,
   ) {}
 
@@ -18,9 +18,9 @@ export class WebSocketGuard implements CanActivate {
     const request = context.switchToHttp().getRequest();
     const token = request.handshake.auth.token;
 
-    if (!token) throw new UnauthorizedException();
+    if (!token) throw new WsException('Unauthorized');
     try {
-      const payload = await this.jwtService.verifyAsync(token, {
+      const payload = await this.jwt.verifyAsync(token, {
         secret: process.env.SECRET_KEY,
       });
       const user = await this.prisma.user.findFirst({
@@ -31,7 +31,7 @@ export class WebSocketGuard implements CanActivate {
       request.user = user;
       request.user.auth_token = token;
     } catch {
-      throw new UnauthorizedException();
+      throw new WsException('Server has failed to fetch user data');
     }
     return true;
   }
