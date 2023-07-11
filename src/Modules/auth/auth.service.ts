@@ -29,9 +29,10 @@ export class AuthService {
       sub: user.id,
       email: user.email,
     };
-    return {
-      access_token: await this.jwt.signAsync(payload),
-    };
+    user['auth_token'] = await this.jwt.signAsync(payload);
+    delete user.password;
+
+    return user;
   }
 
   async register(data: UserDTO): Promise<User> {
