@@ -4,6 +4,7 @@ import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from 'src/prisma.service';
 import { WebSocketGuard } from './websocket.guard';
 import { ChatGateway } from 'src/Gateways/chat.gateway';
+import { WebSocketService } from './websocket.service';
 
 @Module({
   providers: [
@@ -12,6 +13,7 @@ import { ChatGateway } from 'src/Gateways/chat.gateway';
     ChatGateway,
     JwtService,
     PrismaService,
+    WebSocketService,
   ],
 })
 export class GuardsModule {}

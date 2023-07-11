@@ -5,9 +5,10 @@ import {
   WebSocketGateway,
   SubscribeMessage,
 } from '@nestjs/websockets';
-import { Server, Socket } from 'socket.io';
+import { Socket } from 'socket.io';
 import { UseGuards } from '@nestjs/common';
 import { WebSocketGuard } from 'src/Guards/websocket.guard';
+import { WebSocketService } from 'src/Guards/websocket.service';
 
 @WebSocketGateway({
   cors: {
@@ -17,15 +18,28 @@ import { WebSocketGuard } from 'src/Guards/websocket.guard';
   allowEIO3: true,
 })
 export class ChatGateway {
+  constructor(private webSocket: WebSocketService) {}
+
   @WebSocketServer()
-  server: Server;
+  server;
 
   @UseGuards(WebSocketGuard)
   @SubscribeMessage('message')
-  handleMessage(
+  async handleMessage(
     @MessageBody() message: string,
     @ConnectedSocket() socket: Socket,
-  ): void {
-    this.server.emit('message', message);
+  ): Promise<void> {
+    const sender = await this.webSocket.findUserFromToken(
+      socket.handshake.auth.token,
+    );
+    const receiver = await this.webSocket.findMessageReceiver(
+      socket.handshake.query.to,
+    );
+
+    this.server.emit('message', {
+      message,
+      from: sender,
+      to: receiver,
+    });
   }
 }
