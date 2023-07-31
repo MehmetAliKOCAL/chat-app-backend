@@ -18,7 +18,10 @@ export class WebSocketGuard implements CanActivate {
     const request = context.switchToHttp().getRequest();
     const token = request.handshake.auth.token;
 
-    if (!token) throw new WsException('Unauthorized');
+    if (!token)
+      throw new WsException(
+        'You have to login before joining a chat',
+      );
     try {
       const payload = await this.jwt.verifyAsync(token, {
         secret: process.env.SECRET_KEY,
