@@ -4,11 +4,13 @@ import {
   WebSocketServer,
   WebSocketGateway,
   SubscribeMessage,
+  WsException,
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
 import { UseGuards } from '@nestjs/common';
 import { WebSocketGuard } from 'src/Guards/websocket.guard';
 import { WebSocketService } from 'src/Guards/websocket.service';
+import { SendToDTO } from 'src/DTOs/chat.dto';
 
 @WebSocketGateway({
   cors: {
@@ -23,36 +25,39 @@ export class ChatGateway {
   server: Server;
 
   @UseGuards(WebSocketGuard)
-  @SubscribeMessage('connection')
   async handleConnection(@ConnectedSocket() socket: Socket): Promise<void> {
-    const sender = await this.webSocket.findUserFromSocket(socket);
+    const recentlyConnectedUser = await this.webSocket.findUserFromSocket(socket);
     const connectedSockets = await this.server.fetchSockets();
     const connectedUsers = async () =>
       await Promise.all(
         connectedSockets.map(async (socket) => await this.webSocket.findUserFromSocket(socket)),
-      ).then((res) => res.filter((user) => user['name'] !== sender['name']));
+      ).then((res) => res.filter((user) => user['name'] !== recentlyConnectedUser['name']));
 
     socket.emit('users', await connectedUsers());
-    socket.broadcast.emit('user_connected', sender);
+    socket.broadcast.emit('user_connected', recentlyConnectedUser);
   }
 
   async handleDisconnect(@ConnectedSocket() socket: Socket): Promise<void> {
-    const sender = await this.webSocket.findUserFromSocket(socket);
-
-    socket.broadcast.emit('user_disconnected', sender);
+    const disconnectedUser = await this.webSocket.findUserFromSocket(socket);
+    socket.broadcast.emit('user_disconnected', disconnectedUser);
   }
 
   @UseGuards(WebSocketGuard)
   @SubscribeMessage('message')
   async handleMessage(
-    @MessageBody('message') message: object,
-    @MessageBody('to') to: object,
+    @MessageBody('message')
+    message: string,
+    @MessageBody('to') to: SendToDTO,
     @ConnectedSocket() socket: Socket,
   ): Promise<void> {
-    const sender = await this.webSocket.findUserFromSocket(socket);
-    const newPayload = { message, from: sender, to };
+    if (to === null) throw new WsException('Please pick a user before sending a message');
+    else if (message === '') throw new WsException("Please don't send empty messages");
+    else {
+      const messageSender = await this.webSocket.findUserFromSocket(socket);
+      const payload = { message, from: messageSender, to };
 
-    socket.to(to['id']).emit('message', newPayload);
-    socket.emit('message', newPayload);
+      socket.to(to.id).emit('message', payload);
+      socket.emit('message', payload);
+    }
   }
 }
