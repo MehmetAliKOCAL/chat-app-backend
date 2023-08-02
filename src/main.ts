@@ -8,9 +8,9 @@ async function bootstrap() {
     abortOnError: false,
   });
   const config = new DocumentBuilder()
-    .setTitle('Chat App API Dokümantasyonu')
+    .setTitle('Chat API Documentation')
     .setDescription(
-      'Chat uygulamasının API endpointlerini nasıl kullanacağınızı bu dokümantasyondan öğrenebilirsiniz.',
+      "You can check the endpoints, what object to send them or which http method they work with in this documentation. To be able to test all the endpoints, you can create an account from the register endpoint below if you haven't done it yet, and then login by using login endpoint. This way you'll get a jwt auth key, copy it and click green 'Authorize' button below. Paste your key, now you can start trying other endpoints that aren't below 'Authorization' header. ",
     )
     .setVersion('1.0')
     .addBearerAuth(
@@ -19,7 +19,7 @@ async function bootstrap() {
         scheme: 'bearer',
         bearerFormat: 'JWT',
         name: 'JWT',
-        description: 'Enter JWT token',
+        description: 'Enter JWT token (You can get it by logging in)',
         in: 'header',
       },
       'JWT-auth',
