@@ -9,17 +9,13 @@ import {
   Controller,
   HttpStatus,
 } from '@nestjs/common';
-import {
-  ApiBearerAuth,
-  ApiOperation,
-  ApiTags,
-} from '@nestjs/swagger/dist/decorators';
+import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger/dist/decorators';
 import { UserDTO } from 'src/DTOs/user.dto';
 import { UserService } from './user.service';
 import { AuthGuard } from '../../Guards/auth.guard';
 
 @ApiBearerAuth('JWT-auth')
-@ApiTags('Kullanıcı İşlemleri')
+@ApiTags('User Operations')
 @UseGuards(AuthGuard)
 @Controller('user')
 export class UserController {
@@ -27,7 +23,7 @@ export class UserController {
 
   @ApiOperation({
     summary:
-      'TOKEN GEREKTİRİR | Hesap detaylarını içeren veriyi çeker (Hesap şifresi hariç)',
+      'Requires a token | Returns the account details as a json object (Without the password)',
   })
   @HttpCode(HttpStatus.OK)
   @Get('accountDetails')
@@ -36,14 +32,11 @@ export class UserController {
   }
 
   @ApiOperation({
-    summary: 'TOKEN GEREKTİRİR | Hesap detaylarını günceller',
+    summary: 'Requires a token | Updates the account details',
   })
   @HttpCode(HttpStatus.OK)
   @Post('update')
-  async updateAccountDetails(
-    @Request() req,
-    @Body() userDTO: UserDTO,
-  ) {
+  async updateAccountDetails(@Request() req, @Body() userDTO: UserDTO) {
     await this.userService.updateUser({
       where: { id: Number(req.user.id) },
       data: userDTO,
@@ -51,7 +44,7 @@ export class UserController {
   }
 
   @ApiOperation({
-    summary: 'TOKEN GEREKTİRİR | Hesabı siler',
+    summary: 'Requires a token | Deletes the account',
   })
   @HttpCode(HttpStatus.OK)
   @Delete('deleteAccount')

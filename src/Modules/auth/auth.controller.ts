@@ -1,14 +1,5 @@
-import {
-  Post,
-  Body,
-  HttpCode,
-  Controller,
-  HttpStatus,
-} from '@nestjs/common';
-import {
-  ApiTags,
-  ApiOperation,
-} from '@nestjs/swagger/dist/decorators';
+import { Post, Body, HttpCode, Controller, HttpStatus } from '@nestjs/common';
+import { ApiTags, ApiOperation } from '@nestjs/swagger/dist/decorators';
 import { AuthService } from './auth.service';
 import { UserDTO, LoginUserDTO } from 'src/DTOs/user.dto';
 
@@ -18,7 +9,7 @@ export class AuthController {
   constructor(private authService: AuthService) {}
 
   @ApiOperation({
-    summary: 'E-posta ve şifre göndererek auth tokeni al',
+    summary: 'Get an auth token by sending valid email and password',
   })
   @HttpCode(HttpStatus.OK)
   @Post('login')
@@ -27,7 +18,7 @@ export class AuthController {
   }
 
   @ApiOperation({
-    summary: 'Kayıt ol',
+    summary: 'Register an account',
   })
   @HttpCode(HttpStatus.CREATED)
   @Post('register')
