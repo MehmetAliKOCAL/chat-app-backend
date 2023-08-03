@@ -9,8 +9,9 @@ import {
 import { Server, Socket } from 'socket.io';
 import { UseGuards } from '@nestjs/common';
 import { WebSocketGuard } from 'src/Guards/websocket.guard';
-import { WebSocketService } from 'src/Guards/websocket.service';
-import { SendToDTO } from 'src/DTOs/chat.dto';
+import { ChatService } from 'src/Gateways/chat.service';
+import { ChatPayloadDTO, UserDTO } from 'src/DTOs/chat.dto';
+import { PrismaService } from 'src/prisma.service';
 
 @WebSocketGateway({
   cors: {
@@ -20,26 +21,17 @@ import { SendToDTO } from 'src/DTOs/chat.dto';
   allowEIO3: true,
 })
 export class ChatGateway {
-  constructor(private webSocket: WebSocketService) {}
+  constructor(private chatService: ChatService, private prisma: PrismaService) {}
   @WebSocketServer()
   server: Server;
 
   @UseGuards(WebSocketGuard)
   async handleConnection(@ConnectedSocket() socket: Socket): Promise<void> {
-    const recentlyConnectedUser = await this.webSocket.findUserFromSocket(socket);
-    const connectedSockets = await this.server.fetchSockets();
-    const connectedUsers = async () =>
-      await Promise.all(
-        connectedSockets.map(async (socket) => await this.webSocket.findUserFromSocket(socket)),
-      ).then((res) => res.filter((user) => user['name'] !== recentlyConnectedUser['name']));
-
-    socket.emit('users', await connectedUsers());
-    socket.broadcast.emit('user_connected', recentlyConnectedUser);
+    this.chatService.handleConnection(socket, this.server);
   }
 
   async handleDisconnect(@ConnectedSocket() socket: Socket): Promise<void> {
-    const disconnectedUser = await this.webSocket.findUserFromSocket(socket);
-    socket.broadcast.emit('user_disconnected', disconnectedUser);
+    this.chatService.handleDisconnect(socket);
   }
 
   @UseGuards(WebSocketGuard)
@@ -47,17 +39,31 @@ export class ChatGateway {
   async handleMessage(
     @MessageBody('message')
     message: string,
-    @MessageBody('to') to: SendToDTO,
+    @MessageBody('to') to: UserDTO,
     @ConnectedSocket() socket: Socket,
   ): Promise<void> {
     if (to === null) throw new WsException('Please pick a user before sending a message');
     else if (message === '') throw new WsException("Please don't send empty messages");
     else {
-      const messageSender = await this.webSocket.findUserFromSocket(socket);
-      const payload = { message, from: messageSender, to };
-
-      socket.to(to.id).emit('message', payload);
-      socket.emit('message', payload);
+      this.chatService.handleMessage(message, to, socket, this.server);
     }
+  }
+
+  @UseGuards(WebSocketGuard)
+  @SubscribeMessage('chat_history')
+  async handleChatHistory(
+    @MessageBody() chattingWith: UserDTO,
+    @ConnectedSocket() socket: Socket,
+  ): Promise<void> {
+    this.chatService.handleChatHistory(socket, chattingWith);
+  }
+
+  @UseGuards(WebSocketGuard)
+  @SubscribeMessage('delete_message')
+  async handleDeleteMessage(
+    @MessageBody() payload: ChatPayloadDTO,
+    @ConnectedSocket() socket: Socket,
+  ): Promise<void> {
+    this.chatService.handleDeleteMessage(this.server, socket, payload);
   }
 }
