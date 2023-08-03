@@ -1,4 +1,12 @@
-import { IsNotEmpty, IsEmail, IsString, IsObject } from 'class-validator';
+import {
+  IsNotEmpty,
+  IsEmail,
+  IsString,
+  IsObject,
+  IsNumber,
+  IsBoolean,
+  IsArray,
+} from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger/dist';
 
 export class MessageDTO {
@@ -8,7 +16,7 @@ export class MessageDTO {
   message: string;
 }
 
-export class SendToDTO {
+export class UserDTO {
   @ApiProperty({
     example: 'John',
   })
@@ -39,6 +47,11 @@ export class SendToDTO {
 }
 
 export class ChatPayloadDTO {
+  @ApiProperty({ example: '14' })
+  @IsNumber()
+  @IsNotEmpty()
+  id: number;
+
   @ApiProperty({ example: 'Hello World!' })
   @IsString()
   @IsNotEmpty()
@@ -46,9 +59,31 @@ export class ChatPayloadDTO {
 
   @ApiProperty({
     example:
+      "{ name:'Jane', surname:'Doe', email:'jane_doe@hotmail.com', id:'tYwsVXAlI3_L0_PoADLK'  }",
+  })
+  @IsObject()
+  @IsNotEmpty()
+  from: UserDTO;
+
+  @ApiProperty({
+    example:
       "{ name:'John', surname:'Doe', email:'john_doe@hotmail.com', id:'OzWjVXAlI3_L0_ULADKS'  }",
   })
   @IsObject()
   @IsNotEmpty()
-  to: SendToDTO;
+  to: UserDTO;
+
+  @ApiProperty({
+    example: false,
+  })
+  @IsBoolean()
+  @IsNotEmpty()
+  isDeleted: boolean;
+
+  @ApiProperty({
+    example: false,
+  })
+  @IsArray()
+  @IsNotEmpty()
+  seenBy: string[];
 }
