@@ -6,6 +6,7 @@ import {
   IsNumber,
   IsBoolean,
   IsArray,
+  IsDate,
 } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger/dist';
 
@@ -86,4 +87,10 @@ export class ChatPayloadDTO {
   @IsArray()
   @IsNotEmpty()
   seenBy: string[];
+
+  @ApiProperty({
+    example: '2023-08-04T06:23:55.832Z',
+  })
+  @IsDate()
+  createdAt: Date;
 }
