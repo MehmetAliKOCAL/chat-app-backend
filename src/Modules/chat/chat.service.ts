@@ -40,11 +40,37 @@ export class ChatService {
     ).then((allUsers) => allUsers.filter((user) => user['name'] !== recentlyConnectedUser['name']));
   }
 
+  async sortMessages(messages: object) {
+    const users = Object.keys(messages);
+    await Promise.all(
+      users.map((user) => {
+        messages[user].sort((a: ChatPayloadDTO, b: ChatPayloadDTO) => {
+          if (a.createdAt > b.createdAt) return 1;
+          else if (a.createdAt < b.createdAt) return -1;
+          else return 0;
+        });
+      }),
+    );
+  }
+
+  async parseMessages(messages: object) {
+    const users = Object.keys(messages);
+    await Promise.all(
+      users.map((user) => {
+        messages[user].forEach((message) => {
+          message.from = JSON.parse(message.from);
+          message.to = JSON.parse(message.to);
+        });
+      }),
+    );
+  }
+
   async handleConnection(socket: Socket, server: Server) {
     const recentlyConnectedUser = await this.findUserFromSocket(socket);
     const allConnectedUsers = await this.findAllConnectedUsers(server, recentlyConnectedUser);
     socket.emit('users', allConnectedUsers);
     socket.broadcast.emit('user_connected', recentlyConnectedUser);
+    this.handleGetChatHistory(socket);
   }
 
   async handleDisconnect(socket: Socket) {
@@ -52,36 +78,34 @@ export class ChatService {
     socket.broadcast.emit('user_disconnected', disconnectedUser);
   }
 
-  async handleChatHistory(socket: Socket, messageReceiver: UserDTO) {
+  async handleGetChatHistory(socket: Socket) {
     const messageSender = await this.findUserFromSocket(socket);
     delete messageSender.id;
-    delete messageReceiver.id;
     const chatHistory = await this.prisma.message.findMany({
       where: {
-        OR: [
-          {
-            AND: [{ from: JSON.stringify(messageSender) }, { to: JSON.stringify(messageReceiver) }],
-          },
-          {
-            AND: [{ from: JSON.stringify(messageReceiver) }, { to: JSON.stringify(messageSender) }],
-          },
-        ],
+        OR: [{ from: JSON.stringify(messageSender) }, { to: JSON.stringify(messageSender) }],
       },
     });
+    const messages: object = {};
     await Promise.all(
       chatHistory.map((message) => {
-        message.from = JSON.parse(message.from);
-        message.to = JSON.parse(message.to);
+        const messageFrom = JSON.parse(message.from)['email'];
+        const messageTo = JSON.parse(message.to)['email'];
+
+        if (messageFrom !== messageSender.email) {
+          if (messages[messageFrom] === undefined) messages[messageFrom] = [message];
+          else messages[messageFrom].push(message);
+        } else {
+          if (messages[messageTo] === undefined) messages[messageTo] = [message];
+          else messages[messageTo].push(message);
+        }
       }),
-    ).then(() => {
-      chatHistory.sort((a, b) => {
-        if (a.createdAt > b.createdAt) return 1;
-        else if (a.createdAt < b.createdAt) return -1;
-        else return 0;
-      });
+    ).then(async () => {
+      await this.sortMessages(messages);
+      await this.parseMessages(messages);
     });
 
-    socket.emit('chat_history', chatHistory);
+    socket.emit('get_chat_history', messages);
   }
 
   async handleMessage(message: string, to: UserDTO, socket: Socket, server: Server) {

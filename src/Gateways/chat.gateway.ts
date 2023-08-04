@@ -9,7 +9,7 @@ import {
 import { Server, Socket } from 'socket.io';
 import { UseGuards } from '@nestjs/common';
 import { WebSocketGuard } from 'src/Guards/websocket.guard';
-import { ChatService } from 'src/Gateways/chat.service';
+import { ChatService } from 'src/Modules/chat/chat.service';
 import { ChatPayloadDTO, UserDTO } from 'src/DTOs/chat.dto';
 import { PrismaService } from 'src/prisma.service';
 
@@ -47,15 +47,6 @@ export class ChatGateway {
     else {
       this.chatService.handleMessage(message, to, socket, this.server);
     }
-  }
-
-  @UseGuards(WebSocketGuard)
-  @SubscribeMessage('chat_history')
-  async handleChatHistory(
-    @MessageBody() chattingWith: UserDTO,
-    @ConnectedSocket() socket: Socket,
-  ): Promise<void> {
-    this.chatService.handleChatHistory(socket, chattingWith);
   }
 
   @UseGuards(WebSocketGuard)
