@@ -57,4 +57,14 @@ export class ChatGateway {
   ): Promise<void> {
     this.chatService.handleDeleteMessage(this.server, socket, payload);
   }
+
+  @UseGuards(WebSocketGuard)
+  @SubscribeMessage('message_seen')
+  async handleMessageSeen(
+    @MessageBody('seenBy') seenBy: Array<string>,
+    @MessageBody('messageId') messageId: number,
+    @ConnectedSocket() socket: Socket,
+  ): Promise<void> {
+    this.chatService.handleMessageSeen(this.server, socket, messageId, seenBy);
+  }
 }
