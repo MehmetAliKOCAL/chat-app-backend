@@ -45,6 +45,12 @@ export class UserDTO {
   @IsString()
   @IsNotEmpty()
   id: string;
+
+  @ApiProperty({
+    example: 'https://picsum.photos/200/200',
+  })
+  @IsString()
+  profile_picture: string;
 }
 
 export class ChatPayloadDTO {
@@ -64,7 +70,7 @@ export class ChatPayloadDTO {
   })
   @IsObject()
   @IsNotEmpty()
-  from: UserDTO;
+  author: UserDTO;
 
   @ApiProperty({
     example:
@@ -72,7 +78,7 @@ export class ChatPayloadDTO {
   })
   @IsObject()
   @IsNotEmpty()
-  to: UserDTO;
+  sentTo: UserDTO;
 
   @ApiProperty({
     example: false,

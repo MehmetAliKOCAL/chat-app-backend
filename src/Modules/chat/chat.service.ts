@@ -13,11 +13,15 @@ export class ChatService {
     const { email: userEmail } = await this.jwt.verifyAsync(token, {
       secret: process.env.SECRET_KEY,
     });
-    const { name, surname, email } = await this.prisma.user.findFirst({
+    const { name, surname, email, profile_picture } = await this.prisma.user.findFirst({
       where: { email: userEmail },
+      include: {
+        messagesSent: false,
+        messagesTaken: false,
+      },
     });
 
-    return { name, surname, email, id: socket.id };
+    return { name, surname, email, profile_picture, id: socket.id };
   }
 
   async findUserFromEmail(server: Server, email: string) {
@@ -40,26 +44,14 @@ export class ChatService {
     ).then((allUsers) => allUsers.filter((user) => user['name'] !== recentlyConnectedUser['name']));
   }
 
-  async sortMessages(messages: object) {
-    const users = Object.keys(messages);
+  async sortMessages(allMessages: object) {
+    const users = Object.keys(allMessages);
     await Promise.all(
       users.map((user) => {
-        messages[user].sort((a: ChatPayloadDTO, b: ChatPayloadDTO) => {
+        allMessages[user].messages.sort((a: ChatPayloadDTO, b: ChatPayloadDTO) => {
           if (a.createdAt > b.createdAt) return 1;
           else if (a.createdAt < b.createdAt) return -1;
           else return 0;
-        });
-      }),
-    );
-  }
-
-  async parseMessages(messages: object) {
-    const users = Object.keys(messages);
-    await Promise.all(
-      users.map((user) => {
-        messages[user].forEach((message) => {
-          message.from = JSON.parse(message.from);
-          message.to = JSON.parse(message.to);
         });
       }),
     );
@@ -79,55 +71,56 @@ export class ChatService {
   }
 
   async handleGetChatHistory(socket: Socket) {
-    const messageSender = await this.findUserFromSocket(socket);
-    delete messageSender.id;
-    const chatHistory = await this.prisma.message.findMany({
+    const thisUser = await this.findUserFromSocket(socket);
+    const allMessages = await this.prisma.message.findMany({
       where: {
-        OR: [{ from: JSON.stringify(messageSender) }, { to: JSON.stringify(messageSender) }],
+        OR: [{ authorEmail: thisUser.email }, { sentToEmail: thisUser.email }],
+      },
+      include: {
+        author: true,
+        sentTo: true,
       },
     });
-    const messages: object = {};
+    const chatHistory: object = {};
     await Promise.all(
-      chatHistory.map((message) => {
-        const messageFrom = JSON.parse(message.from)['email'];
-        const messageTo = JSON.parse(message.to)['email'];
-
-        if (messageFrom !== messageSender.email) {
-          if (messages[messageFrom] === undefined) messages[messageFrom] = [message];
-          else messages[messageFrom].push(message);
+      allMessages.map(async (message) => {
+        delete message.author.password;
+        delete message.sentTo.password;
+        if (message.authorEmail !== thisUser.email) {
+          if (chatHistory[message.authorEmail] === undefined)
+            chatHistory[message.authorEmail] = { user: message.author, messages: [message] };
+          else chatHistory[message.authorEmail].messages.push(message);
         } else {
-          if (messages[messageTo] === undefined) messages[messageTo] = [message];
-          else messages[messageTo].push(message);
+          if (chatHistory[message.sentToEmail] === undefined)
+            chatHistory[message.sentToEmail] = { user: message.sentTo, messages: [message] };
+          else chatHistory[message.sentToEmail].messages.push(message);
         }
       }),
     ).then(async () => {
-      await this.sortMessages(messages);
-      await this.parseMessages(messages);
+      await this.sortMessages(chatHistory);
     });
-
-    socket.emit('get_chat_history', messages);
+    socket.emit('get_chat_history', chatHistory);
   }
 
   async handleMessage(message: string, to: UserDTO, socket: Socket, server: Server) {
     const messageSender: UserDTO = await this.findUserFromSocket(socket);
-    delete messageSender.id;
-    delete to.id;
     const payload = await this.prisma.message.create({
       data: {
         message,
-        from: JSON.stringify(messageSender),
-        to: JSON.stringify(to),
+        authorEmail: messageSender.email,
+        sentToEmail: to.email,
         seenBy: [messageSender.email],
         isDeleted: false,
       },
+      include: {
+        author: true,
+        sentTo: true,
+      },
     });
-    const sendTo = await this.findUserFromEmail(server, JSON.parse(payload.to).email);
-    const updatedPayloadWithUserDetails = { ...payload, to: sendTo, from: messageSender };
+    const sentTo = await this.findUserFromEmail(server, payload?.sentToEmail);
 
-    if (sendTo !== undefined) {
-      socket.to(sendTo.id).emit('message', updatedPayloadWithUserDetails);
-      socket.emit('message', updatedPayloadWithUserDetails);
-    } else socket.emit('message', { ...updatedPayloadWithUserDetails, to: JSON.parse(payload.to) });
+    socket.emit('message', payload);
+    if (sentTo?.id !== undefined) socket.to(sentTo.id).emit('message', payload);
   }
 
   async handleDeleteMessage(server: Server, socket: Socket, payload: ChatPayloadDTO) {
@@ -135,36 +128,24 @@ export class ChatService {
       data: { isDeleted: true },
       where: { id: payload.id },
     });
-    const updatedPayloadWithUserDetails = {
-      ...updatedPayload,
-      from: JSON.parse(updatedPayload.from),
-      to: JSON.parse(updatedPayload.to),
-    };
-    socket.emit('message_deleted', updatedPayloadWithUserDetails);
-    const to = await this.findUserFromEmail(server, payload.to.email);
-    socket.to(to['id']).emit('message_deleted', updatedPayloadWithUserDetails);
+
+    socket.emit('message_deleted', updatedPayload);
+    const sentTo = await this.findUserFromEmail(server, payload.sentTo.email);
+    if (sentTo !== undefined) socket.to(sentTo.id).emit('message_deleted', updatedPayload);
   }
 
-  async handleMessageSeen(
-    server: Server,
-    socket: Socket,
-    messageId: number,
-    seenBy: Array<string>,
-  ) {
-    const currentUser = await this.findUserFromSocket(socket);
-    seenBy.push(currentUser.email);
+  async handleMessageSeen(server: Server, socket: Socket, message: ChatPayloadDTO) {
+    const thisUser = await this.findUserFromSocket(socket);
+    message.seenBy.push(thisUser.email);
     const updatedMessage = await this.prisma.message.update({
-      data: { seenBy },
-      where: { id: messageId },
+      data: { seenBy: message.seenBy },
+      where: { id: message.id },
     });
-    const to: any = await this.findUserFromEmail(server, JSON.parse(updatedMessage.to)['email']);
-    const from: any = await this.findUserFromEmail(
-      server,
-      JSON.parse(updatedMessage.from)['email'],
-    );
-    updatedMessage.from = from;
-    updatedMessage.to = to;
+    const author = await this.findUserFromEmail(server, updatedMessage.authorEmail);
+    const sentTo = await this.findUserFromEmail(server, updatedMessage.sentToEmail);
+    updatedMessage['author'] = author;
+    updatedMessage['sentTo'] = sentTo;
     socket.emit('message_seen', updatedMessage);
-    socket.to([from.id, to.id]).emit('message_seen', updatedMessage);
+    socket.to([author.id, sentTo.id]).emit('message_seen', updatedMessage);
   }
 }

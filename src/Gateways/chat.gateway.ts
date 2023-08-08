@@ -61,10 +61,9 @@ export class ChatGateway {
   @UseGuards(WebSocketGuard)
   @SubscribeMessage('message_seen')
   async handleMessageSeen(
-    @MessageBody('seenBy') seenBy: Array<string>,
-    @MessageBody('messageId') messageId: number,
+    @MessageBody('message') message: ChatPayloadDTO,
     @ConnectedSocket() socket: Socket,
   ): Promise<void> {
-    this.chatService.handleMessageSeen(this.server, socket, messageId, seenBy);
+    this.chatService.handleMessageSeen(this.server, socket, message);
   }
 }
