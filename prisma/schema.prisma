@@ -8,11 +8,12 @@ datasource db {
 }
 
 model User {
-  id       Int    @id @default(autoincrement())
-  name     String
-  surname  String
-  email    String @unique
-  password String
+  id              Int    @id @default(autoincrement())
+  name            String
+  surname         String
+  email           String @unique
+  password        String
+  profile_picture String @default("")
 }
 
 model Message {

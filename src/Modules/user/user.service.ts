@@ -1,50 +1,39 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, HttpException, HttpStatus } from '@nestjs/common';
 import { User, Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma.service';
+import { CloudinaryService } from '../cloudinary/cloudinary.service';
+import { UserDTO } from 'src/DTOs/user.dto';
 
 @Injectable()
 export class UserService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService, private cloudinary: CloudinaryService) {}
 
   async findUser(email: string): Promise<User | null> {
-    return this.prisma.user.findFirst({
+    return await this.prisma.user.findFirst({
       where: { email: email },
     });
   }
 
-  async getUser(params: {
-    skip?: number;
-    take?: number;
-    cursor?: Prisma.UserWhereUniqueInput;
-    where?: Prisma.UserWhereInput;
-    orderBy?: Prisma.UserOrderByWithRelationInput;
-  }): Promise<User[]> {
-    const { skip, take, cursor, where, orderBy } = params;
-    return this.prisma.user.findMany({
-      skip,
-      take,
-      cursor,
-      where,
-      orderBy,
+  async updateUser(userID: number, updatedUser: UserDTO): Promise<User> {
+    return await this.prisma.user.update({
+      where: { id: userID },
+      data: updatedUser,
     });
   }
 
-  async updateUser(params: {
-    where: Prisma.UserWhereUniqueInput;
-    data: Prisma.UserUpdateInput;
-  }): Promise<User> {
-    const { where, data } = params;
-    return this.prisma.user.update({
-      data,
-      where,
+  async deleteUser(userID: number): Promise<User> {
+    return await this.prisma.user.delete({
+      where: {
+        id: userID,
+      },
     });
   }
 
-  async deleteUser(
-    where: Prisma.UserWhereUniqueInput,
-  ): Promise<User> {
-    return this.prisma.user.delete({
-      where,
+  async uploadPFP(file: Express.Multer.File, userEmail: string): Promise<any> {
+    const { secure_url: imageURL } = await this.cloudinary.uploadFile(file);
+    return await this.prisma.user.update({
+      data: { profile_picture: imageURL },
+      where: { email: userEmail },
     });
   }
 }
