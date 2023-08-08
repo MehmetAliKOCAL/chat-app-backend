@@ -4,6 +4,7 @@ import { GuardsModule } from './Guards/guards.module';
 import { UserModule } from './Modules/user/user.module';
 import { AuthModule } from './Modules/auth/auth.module';
 import { ChatModule } from './Modules/chat/chat.module';
+import { CloudinaryModule } from './Modules/cloudinary/cloudinary.module';
 
 @Module({
   imports: [
@@ -12,6 +13,7 @@ import { ChatModule } from './Modules/chat/chat.module';
     UserModule,
     GuardsModule,
     ChatModule,
+    CloudinaryModule,
   ],
 })
 export class AppModule {}
